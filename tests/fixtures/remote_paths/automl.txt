@@ -1,0 +1,45 @@
+SS26_AutoML_Exam.pdf
+Poster Slot Allocation.pdf
+Introduction_Slides_2026.pdf
+Week 0/w01_t01_04_big_picture.pdf
+Week 0/Week_01_all_videos.mp4
+Week 1/Exercise 1 - Basics of HPO.pdf
+Week 1/3_Basic-of-HPO_ALL.pdf
+Week 2/Exercise 2 - Bayesian Optmisation for HPO.pdf
+Week 2/4_BO-for-HPO_all.pdf
+Week 2/Week_05_all_videos.mp4
+Week 2/Week_05_all_videos (merged videos with subtitles).mp4
+Week 3/Exercise 3 - Speedup.pdf
+Week 3/5_Speedup_ALL.pdf
+Week 3/Week_06_all_videos.mp4
+Week 3/Week_06_all_videos (merged videos with subtitles).mp4
+Week 4/Exercise 4 - Multicriteria.pdf
+Week 4/6_Multicriteria_ALL.pdf
+Week 4/Week_07_all_videos.mp4
+Week 4/Week_07_all_videos (merged videos with subtitles).mp4
+Week 6/Exercise 5 - NAS.pdf
+Week 6/ss25-AutoML-lecture-6 NAS .pdf
+Week 6/NAS-combined-trimmed.mp4
+Week 6/NAS-combined-optional.mp4
+Week 6/Week_08_all_videos.mp4
+Week 6/Week_09_all_videos.mp4
+Week 7/Exercise 6 - Alg. Selection.pdf
+Week 7/ss23_automl_algo_sel_ALL.pdf
+Week 7/Week_12_all_videos.mp4
+Week 7/Week_12_all_videos (merged videos with subtitles).mp4
+Week 8/Exercise 7 - DAC⧸L2L.pdf
+Week 8/dac_lectures.pdf
+Week 8/Week_10_all_videos.mp4
+Week 8/Week_10_all_videos (merged videos with subtitles).mp4
+Week 9： Exam Discussion/Exam Discussion.pdf
+Week 10/Exercise 8 - Analysis.pdf
+Week 10/Interpretability_ALL-2.pdf
+Week 10/Week_11_all_videos.mp4
+Week 10/Week_11_all_videos (merged videos with subtitles).mp4
+Week 10/AutoML MOOC Chapter 2.1 - Evaluation and Benchmarking: The Big Picture.mkv
+Week 10/AutoML MOOC Chapter 2.2 - Evaluation and Benchmarking: Evaluation of ML Models.mkv
+Week 10/AutoML MOOC Chapter 2.3 - Evaluation and Benchmarking: Statistical Tests.mkv
+Week 10/AutoML MOOC Chapter 2.4 - Evaluation and Benchmarking: Nested Evaluation for AutoML.mkv
+Week 10/AutoML MOOC Chapter 2.5 - Evaluation and Benchmarking: Visualizing AutoML Runs.mkv
+Week 10/AutoML MOOC Chapter 2.6 - Evaluation and Benchmarking: Benchmarking of AutoML.mkv
+Week 10/slides-ch2-combined.pdf

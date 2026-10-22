@@ -1,0 +1,99 @@
+# Rules for the example courses, checked against their saved pages by test_layout.py.
+# Layout per course:
+#   <lecture>/Slides, Recordings, Exercises, Solutions   "NN <name>" by unit (00: intro)
+#   <lecture>/Media/NN/…                                  code and data of unit NN
+#   <lecture>/Exam, Project                               what belongs to no unit
+
+[defaults]
+output_root = "out"
+on_change   = "keep-both"
+
+# --- Programmieren in C++ -------------------------------------------------------------
+# Separate sources for the parts of one lecture: the SVN web view (cpp-public) for
+# slides, sheets and code, and the course page (cpp) for what is not in the SVN:
+# recordings and datasets. The page source ignores only links into the SVN folders
+# cpp-public covers, so new links of any other kind (also into other SVN folders)
+# are still reported, and so are page files no rule matches.
+
+# public/ through the SVN web view (no login needed): a directory listing, mapped into
+# the lecture layout by the rules. Versions come from the file size (the web view shows
+# no revisions).
+[sources.cpp-public]
+url        = "coursedl-dir:https://svn.example.edu/ss2026/ProgrammierenCplusplus/svn/public/"
+output_dir = "Programmieren in C++"
+transform  = '''
+folien/(.*?)[-_]?(\d+)\.pdf -re-> "Slides/{i2:02} {g1}.pdf"
+uebungen/(.*?)[-_]?(\d+)\.pdf -re-> "Exercises/{i2:02} {g1}.pdf"
+code/vorlesung-(\d+)/(.*) -re-> "Media/{i1:02}/{g2}"
+code/projekt/(.*) -re-> "Project/{g1}"
+'''
+
+# One list item per lecture: "Vorlesung 9, Dienstag 23. Juni 2026, … (STL = Standard
+# Template Library): Videoaufzeichnung (MP4 Download), Folien, …". The template puts the
+# item text in front, so the rules get the unit number and topic from it.
+[sources.cpp]
+url          = "coursedl-web:https://ad-wiki.informatik.example.edu/teaching/ProgrammierenCplusplusSS2026"
+output_dir   = "Programmieren in C++"
+ignore_regex = 'svn\.example\.edu/[^/]+/ProgrammierenCplusplus/svn/(public|loesungen)/'
+dir_regex    = '/osm-extra/'
+youtube      = false                       # the MP4 files are the same recordings
+transform    = '''
+Vorlesung\s(\d+),[^/]*\((.*)\)[^/]*/.*\.mp4 -re-> "Recordings/{i1:02} {g2}.mp4"
+Vorlesung\s(\d+),[^/]*/.*/osm-extra/(.*) -re-> "Media/{i1:02}/osm-extra/{g2}"
+Vorlesung\s(\d+),[^/]*/.*/([^/]+) -re-> "Media/{i1:02}/{g2}"
+'''
+
+[sources.cpp.templates]
+file = "%(cd_item|-)s/%(cd_path)s"
+
+# --- AutoML ---------------------------------------------------------------------------
+# Password-protected WordPress page. Units are the page's "Week N" list items (Week 0 is
+# the introduction), also where files count differently ("Exercise 5" is in Week 6).
+# The merged videos are the KI-Campus MOOC's weeks: "Recordings/02 MOOC week 05.mp4".
+# Link texts ("PDF", "Merged slides") say nothing, so the file names are used.
+[sources.automl]
+url        = "coursedl-web:https://ml.informatik.example.edu/ss26-automl-lecture/"
+output_dir = "AutoML"
+transform  = '''
+Introduction_Slides_2026.pdf --> "Slides/00 Introduction.pdf"
+(?:.*/)?Week\s9[^/]*/(.*) -re-> "Exam/{g1}"
+(?:.*/)?Week\s(\d+)[^/]*/Exercise\s\d+\s-\s(.*)\.pdf -re-> "Exercises/{i1:02} {g2}.pdf"
+(?:.*/)?Week\s(\d+)[^/]*/Week_(\d+)_all_videos(.*)\.mp4 -re-> "Recordings/{i1:02} MOOC week {i2:02}{g3}.mp4"
+(?:.*/)?Week\s(\d+)[^/]*/(.*\.(mp4|mkv|webm)) -re-> "Recordings/{i1:02} {g2}"
+(?:.*/)?Week\s(\d+)[^/]*/(?:[a-z]?\d+[_-])*(.*\.pdf) -re-> "Slides/{i1:02} {g2}"
+(?:.*/)?([^/]*Exam[^/]*\.pdf) -re-> "Exam/{g1}"
+(?:.*/)?(Poster\sSlot\sAllocation\.pdf) -re-> "Exam/{g1}"
+'''
+
+# --- Image Processing and Computer Graphics -------------------------------------------
+# Table with one row per class. The slide links say the topic ("Class 1: Introduction and
+# image basics"), so the template puts the link text in front.
+# Slides and recordings need HTTP basic auth (the page itself is public).
+[sources.imageproc]
+url        = "coursedl-web:https://lmb.informatik.example.edu/lectures/image_processing/"
+output_dir = "Image Processing and Computer Graphics"
+transform  = '''
+Class\s(\d+):\s([^/]*)/.*\.pdf -re-> "Slides/{i1:02} {g2}.pdf"
+Recording/.*/(\D*?)(\d+)\.mp4 -re-> "Recordings/{i2:02} {g1}.mp4"
+([^/]+)/.*/\D*(\d+)\w*\.mp4 -re-> "Recordings/{i2:02} {g1}.mp4"
+Exercise\s(\d+)/.*\.zip -re-> "Exercises/{i1:02} Exercise.zip"
+Solution\s(\d+)/.*\.zip -re-> "Solutions/{i1:02} Solution.zip"
+[^/]*/(?:.*/)?(TestExam[^/]*\.pdf) -re-> "Exam/{g1}"
+'''
+
+[sources.imageproc.templates]
+file = "%(cd_text|-)s/%(cd_path)s"
+
+# --- Functional Programming in Lean ---------------------------------------------------
+# Table with one row per lecture: "Tu 2026-10-20 | Introduction | Slides 01, code, rec".
+[sources.lean]
+url        = "coursedl-web:https://proglang.github.io/teaching/26ws/lean.html"
+output_dir = "Functional Programming in Lean"
+transform  = '''
+[^/]*\d{4}-\d\d-\d\d\s([^/]+)/.*/lecture(\d+)\.pdf -re-> "Slides/{i2:02} {g1}.pdf"
+[^/]*\d{4}-\d\d-\d\d\s([^/]+)/.*-lecture-(\d+)\.mp4 -re-> "Recordings/{i2:02} {g1}.mp4"
+[^/]*/(?:.*/)?(lecture(\d+)\.lean) -re-> "Media/{i2:02}/{g1}"
+'''
+
+[sources.lean.templates]
+file = "%(cd_item|-)s/%(cd_path)s"

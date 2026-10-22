@@ -1,0 +1,70 @@
+# Example config: one source of each type. Copy it to `coursedl.toml`, replace the URLs,
+# folders and rules with your courses', and pass it with -c. Reference:
+# docs/configuration.md (keys, auth), docs/sources.md (source types).
+# Check a source with `coursedl sync --dry-run --explain SOURCE` before the first real run.
+#
+# Transform rules map the remote path to the local one (PFERD syntax). A file no rule
+# matches is not downloaded but reported once; add a rule and the next run fetches it.
+# Unquoted patterns can't contain spaces, so they use \s; "…" targets may.
+
+[defaults]
+output_root = "~/University"           # the lecture folders go here; relative: from this file
+# state_dir = ".coursedl"              # default; relative: from output_root
+on_change   = "keep-both"              # or "backup-old"
+notify_cmd  = ["notify-send", "--app-name=coursedl", "{title}", "{body}"]
+
+# coursedl-web: a course page and the files it links. Headings above a link become
+# folders of the remote path; YouTube links become video downloads.
+[sources.lecture-page]
+url          = "coursedl-web:https://example.org/teaching/lecture/"
+output_dir   = "Lecture"
+follow_regex = '/teaching/lecture/exercises'   # subpages to crawl too
+ignore_regex = '/old-semester/'                # links to skip silently
+# Password form on the page; or { type = "basic", username = "…", password_cmd = "…" },
+# or { type = "cookies", browser = "firefox" }.
+auth         = { type = "form", password_cmd = "pass uni/lecture" }
+transform    = '''
+Slides/.*?(\d+)\.pdf -re-> "Slides/{i1:02}.pdf"
+Exercises/.*?(\d+)\.pdf -re-> "Exercises/{i1:02}.pdf"
+.*\.(mp4|webm) -re-> "Recordings/{g0}"
+'''
+
+# Optional: build the remote path from the link's list item or table row, e.g.
+# "Lecture 3: Sorting" in front of the file name.
+[sources.lecture-page.templates]
+file = "%(cd_item|-)s/%(cd_path)s"
+
+# coursedl-dir: an HTTP directory listing (Apache/nginx autoindex, SVN web view), with its
+# subfolders.
+[sources.lecture-files]
+url        = "coursedl-dir:https://example.org/lecture/files/"
+output_dir = "Lecture"
+transform  = '''
+slides/(.*) -re-> "Slides/{g1}"
+code/(.*) -re-> "Media/{g1}"
+'''
+
+# coursedl-nextcloud: a public Nextcloud share. Its password (if any) goes into basic auth;
+# the user name is ignored.
+[sources.lecture-share]
+url        = "coursedl-nextcloud:https://cloud.example.org/index.php/s/SHARE_TOKEN"
+output_dir = "Lecture"
+auth       = { type = "basic", password_cmd = "pass uni/lecture-share" }
+transform  = '''
+(.*) -re-> "Share/{g1}"
+'''
+
+# coursedl-youtube: a YouTube playlist, or all playlists of a channel (`…/@channel/playlists`).
+# `cd_dir` is the playlist title, `cd_index` the video's position in it.
+[sources.lecture-videos]
+url        = "coursedl-youtube:https://www.youtube.com/playlist?list=PLAYLIST_ID"
+output_dir = "Lecture/Recordings"
+
+[sources.lecture-videos.templates]
+video = "%(cd_index)02d %(title)s.%(ext)s"
+
+# coursedl-svn: an svn working copy (checkout on the first run, then `svn update`). Uses
+# svn's own login: run `svn ls URL` once and log in. No auth and no transform rules here.
+[sources.lecture-svn]
+url        = "coursedl-svn:https://svn.example.org/lecture/solutions/"
+output_dir = "Lecture/Solutions"

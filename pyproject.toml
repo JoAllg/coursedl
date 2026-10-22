@@ -1,0 +1,58 @@
+[project]
+name = "coursedl"
+version = "0.1.0"
+description = "Sync course material from university websites via yt-dlp"
+authors = [
+    { name = "Joshua Allgeier", email = "57436524+JoAllg@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "pydantic>=2.14.1",
+    # [default] brings the requests handler, which drops Authorization on redirects to
+    # another host (basic auth); urllib's keeps it.
+    "yt-dlp[default]>=2026.8.19",
+]
+
+[project.scripts]
+coursedl = "coursedl.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.40.2",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+    "types-yt-dlp>=2026.8.19.20261008",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = [".claude"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "PTH", "N"]
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "recommended"
+# yt-dlp ships no type information: everything coming from it is Any/Unknown.
+reportMissingTypeStubs = false
+reportAny = false
+reportExplicitAny = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownParameterType = false
+
+[tool.ruff.lint.per-file-ignores]
+# Copied from PFERD; kept close to upstream.
+"src/coursedl/transform.py" = ["E501", "RUF005"]
+
+[tool.uv]
+# Rebuild on source changes too, so `uv tool run --from <this folder>` (the systemd
+# service) always runs the current code.
+cache-keys = [{ file = "pyproject.toml" }, { file = "src/**/*.py" }]

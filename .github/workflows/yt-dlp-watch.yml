@@ -1,0 +1,81 @@
+# Checks every new yt-dlp release against the internals we use (tests/test_api_surface.py).
+# Green: PR that bumps ytdlp-verified.txt and uv.lock, with the relevant changelog part.
+# Red: an issue labelled yt-dlp-api with the test output, the changelog part and the
+# upstream diff of the files we depend on. Fixing it is done separately.
+name: yt-dlp watch
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: sudo apt-get install -y --no-install-recommends subversion  # tests/test_svn.py
+
+      - name: Compare with the last verified version
+        id: version
+        run: |
+          new=$(gh api repos/yt-dlp/yt-dlp/releases/latest --jq .tag_name)
+          old=$(cat ytdlp-verified.txt)
+          echo "new=$new" >> "$GITHUB_OUTPUT"
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          if [ "$new" = "$old" ]; then echo "same=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Upgrade and test
+        if: steps.version.outputs.same != 'true'
+        id: test
+        continue-on-error: true
+        run: |
+          uv sync --locked
+          uv lock --upgrade-package "yt-dlp==${{ steps.version.outputs.new }}"
+          uv sync
+          set -o pipefail
+          { uv run pytest && uv run basedpyright; } 2>&1 | tee test-output.txt
+
+      - name: Collect upstream changes
+        if: steps.version.outputs.same != 'true'
+        run: |
+          git clone --quiet --filter=blob:none https://github.com/yt-dlp/yt-dlp.git upstream
+          git -C upstream diff "${{ steps.version.outputs.old }}..${{ steps.version.outputs.new }}" -- \
+            yt_dlp/extractor/common.py yt_dlp/YoutubeDL.py yt_dlp/postprocessor/common.py \
+            yt_dlp/networking/ yt_dlp/utils/ yt_dlp/downloader/external.py > upstream.diff
+          # Changelog sections for the new release that can affect us.
+          awk '/^### /{n++} n==1' upstream/Changelog.md \
+            | awk '/^#### (Core|Networking|Misc)/{p=1; print; next} /^#### Extractor/{p=2; print; next}
+                   /^#### /{p=0} p==1 || (p==2 && /(generic|common)/)' > changelog.txt
+
+      - name: Bump PR
+        if: steps.version.outputs.same != 'true' && steps.test.outcome == 'success'
+        run: |
+          new=${{ steps.version.outputs.new }}
+          echo "$new" > ytdlp-verified.txt
+          git config user.name github-actions && git config user.email github-actions@github.com
+          git switch -c "bump-yt-dlp-$new"
+          git commit -am "Bump verified yt-dlp to $new"
+          git push -u origin HEAD
+          gh pr create --title "Bump verified yt-dlp to $new" --body-file changelog.txt
+
+      - name: Issue
+        if: steps.version.outputs.same != 'true' && steps.test.outcome != 'success'
+        run: |
+          { echo "yt-dlp ${{ steps.version.outputs.new }} (last verified: ${{ steps.version.outputs.old }}) fails coursedl's checks."
+            echo '## Test output'; echo '```'; tail -c 30000 test-output.txt; echo '```'
+            echo '## Changelog (relevant sections)'; cat changelog.txt
+            echo '## Upstream diff (excerpt)'; echo '```diff'; head -c 30000 upstream.diff; echo '```'; } > body.md
+          title="yt-dlp ${{ steps.version.outputs.new }} breaks coursedl"
+          # The workflow runs daily: one issue per release, not one per day.
+          if gh issue list --state all --label yt-dlp-api --json title --jq '.[].title' | grep -qxF "$title"; then
+            echo "issue exists already"; exit 0
+          fi
+          gh issue create --label yt-dlp-api --title "$title" --body-file body.md
