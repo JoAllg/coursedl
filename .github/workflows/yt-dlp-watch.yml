@@ -19,8 +19,8 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
       - run: sudo apt-get install -y --no-install-recommends subversion  # tests/test_svn.py
 
       - name: Compare with the last verified version
@@ -61,10 +61,18 @@ jobs:
           new=${{ steps.version.outputs.new }}
           echo "$new" > ytdlp-verified.txt
           git config user.name github-actions && git config user.email github-actions@github.com
-          git switch -c "bump-yt-dlp-$new"
+          git switch -c bump-yt-dlp
           git commit -am "Bump verified yt-dlp to $new"
-          git push -u origin HEAD
-          gh pr create --title "Bump verified yt-dlp to $new" --body-file changelog.txt
+          # One branch and one open PR, owned by this workflow: each run overwrites the branch
+          # with the latest passing release, and updates the open PR instead of adding another.
+          git push --force -u origin HEAD
+          title="Bump verified yt-dlp to $new"
+          pr=$(gh pr list --head bump-yt-dlp --state open --json number --jq '.[0].number')
+          if [ -n "$pr" ]; then
+            gh pr edit "$pr" --title "$title" --body-file changelog.txt
+          else
+            gh pr create --title "$title" --body-file changelog.txt
+          fi
 
       - name: Issue
         if: steps.version.outputs.same != 'true' && steps.test.outcome != 'success'
