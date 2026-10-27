@@ -19,11 +19,18 @@ How it syncs:
 
 ## Install
 
+Runs on Linux only for now (Windows lacks `fcntl` and treats paths differently). Needs [uv](https://docs.astral.sh/uv/) (it fetches Python 3.14 itself).
+
 ```sh
 uv tool install .            # or, from a checkout: uv sync && uv run coursedl ...
 ```
 
-Optional: `aria2c` (faster downloads of large files), `svn` (for `coursedl-svn:` sources).
+Other programs, depending on what you use:
+
+- `notify-send` (package `libnotify`, on Debian/Ubuntu `libnotify-bin`) and a running notification daemon (every desktop has one): for `--notify` with the default `notify_cmd`.
+- `ffmpeg`: for YouTube videos in good quality (video and audio come separately and are merged); without it yt-dlp falls back to a single combined file, often only 360p.
+- `aria2c`: faster downloads of large files (optional).
+- `svn`: for `coursedl-svn:` sources.
 
 ## Usage
 

@@ -9,8 +9,10 @@ requires-python = ">=3.14"
 dependencies = [
     "pydantic>=2.14.1",
     # [default] brings the requests handler, which drops Authorization on redirects to
-    # another host (basic auth); urllib's keeps it.
-    "yt-dlp[default]>=2026.8.19",
+    # another host (basic auth); urllib's keeps it. [secretstorage]: Chrome/Chromium
+    # cookies on Linux (`browser = "chrome"`), whose key is in the desktop keyring.
+    # [deno]: the JavaScript runtime yt-dlp needs for YouTube, so none has to be installed.
+    "yt-dlp[default,secretstorage,deno]>=2026.8.19",
 ]
 
 [project.scripts]
