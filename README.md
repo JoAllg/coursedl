@@ -22,7 +22,8 @@ How it syncs:
 Runs on Linux only for now (Windows lacks `fcntl` and treats paths differently). Needs [uv](https://docs.astral.sh/uv/) (it fetches Python 3.14 itself).
 
 ```sh
-uv tool install .            # or, from a checkout: uv sync && uv run coursedl ...
+uv tool install git+https://github.com/JoAllg/coursedl   # installs the `coursedl` command
+# or from a clone, without installing: uv run coursedl ...
 ```
 
 Other programs, depending on what you use:
