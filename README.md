@@ -46,6 +46,8 @@ coursedl links SOURCE                   # links no rule handles
 
 For `coursedl-svn:` sources, log in once with svn itself (`svn ls URL`); coursedl uses svn's stored login and never asks for a password.
 
+For all settings (authentication, templates, transform rules, command line options), see [docs/configuration.md](docs/configuration.md).
+
 ## Notifications
 
 `coursedl sync --notify` runs `notify_cmd` once per run, if there are new or changed files or warnings. The command is set in `[defaults]`; `{title}` and `{body}` are filled in, no shell is involved. The default is a desktop notification:

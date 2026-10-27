@@ -1,0 +1,13 @@
+slides/lecture-01.pdf
+slides/lecture-02.pdf
+slides/lecture-03.pdf
+exercises/sheet-01.pdf
+exercises/sheet-02.pdf
+exercises/sheet-03.pdf
+code/lecture-01/Makefile
+code/lecture-01/main.cpp
+code/lecture-03/Makefile
+code/lecture-03/sort.cpp
+code/project/template/Game.h
+code/project/template/Game.cpp
+code/project/Makefile

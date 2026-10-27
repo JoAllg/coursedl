@@ -31,8 +31,8 @@ class Link:
     href: str
     text: str
     folders: tuple[str, ...]  # headings and list labels above the link
-    # Text of the enclosing list item or table row before its first link, e.g. "Vorlesung
-    # 9, Dienstag 23. Juni 2026 (STL = Standard Template Library)". Often names the unit.
+    # Text of the enclosing list item or table row before its first link, e.g. "Lecture 9,
+    # Tuesday 23 June 2026 (Sorting)". Often names the unit.
     item: str = ""
 
 
@@ -129,7 +129,7 @@ class _Parser(HTMLParser):
             self._heading = None
         # Tolerate unclosed elements (<p>, <li>, …): pop up to the matching open tag. Like
         # browsers, a stray </tr> or </li> doesn't close anything outside its own table or
-        # list (LMB's page has one, and its layout table holds the content area).
+        # list (seen on a course page whose layout table holds the content area).
         for i in range(len(self.stack) - 1, -1, -1):
             if self.stack[i][0] == tag:
                 del self.stack[i:]

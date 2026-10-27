@@ -7,9 +7,9 @@ coursedl reads one TOML file: `-c PATH`, default `coursedl.toml` in the current 
 [defaults]
 output_root = "."                               # default: the folder of this file
 
-[sources.lean]                                  # one section per source; the name is free
-url        = "coursedl-web:https://proglang.github.io/teaching/26ws/lean.html"
-output_dir = "Functional Programming in Lean"   # -> /home/me/University/Functional Programming in Lean/
+[sources.lecture]                               # one section per source; the name is free
+url        = "coursedl-web:https://example.org/teaching/lecture/"
+output_dir = "Lecture"                          # -> /home/me/University/Lecture/
 transform  = '''
 .*/lecture(\d+)\.pdf -re-> "Slides/{i1:02} Lecture.pdf"
 '''
@@ -60,7 +60,7 @@ Options of `coursedl-web:` sources (what each does: [sources.md](sources.md)):
 | `{ type = "form", password_cmd = "…" }` | A password form on the page itself (WordPress "protected post", simple password pages). When a fetched page shows a form with a password field, coursedl fills in the password, sends the form's other fields as they are, and fetches the page again. Optional: `username` (goes into the form's text/email field), `fields = { name = "value" }` (added or overridden). The form must post to the same host. The session cookie is kept for the run, so downloads from that site get it too |
 | `{ type = "cookies", file = "cookies.txt" }` or `browser = "firefox"` | Cookies from a Netscape cookie file or a browser profile, for logins coursedl can't do itself |
 
-The password comes from, in this order: the environment variable `COURSEDL_<SOURCE>_PASSWORD` (source name upper-cased, other characters `_`, e.g. `COURSEDL_CPP_SOLUTIONS_PASSWORD`), `password_cmd` (a command; the first line of its output, e.g. `pass uni/lmb` or `secret-tool lookup …`), `password` (plain text in the file).
+The password comes from, in this order: the environment variable `COURSEDL_<SOURCE>_PASSWORD` (source name upper-cased, other characters `_`, e.g. `COURSEDL_LECTURE_SHARE_PASSWORD`), `password_cmd` (a command; the first line of its output, e.g. `pass uni/lecture` or `secret-tool lookup …`), `password` (plain text in the file).
 
 ## Naming: templates and transform rules
 
@@ -76,20 +76,20 @@ Fields for templates:
 |---|---|
 | `cd_path` | Path from the source: headings/list labels + file name (`coursedl-web:`), path below the listing/share (others) |
 | `cd_dir`, `cd_name` | Folder and file name part of `cd_path` |
-| `cd_text` | Text of the link on the page (`coursedl-web:` only), e.g. `Class 1: Introduction and image basics` |
-| `cd_item` | Text of the link's list item or table row before its first link, e.g. `Vorlesung 9, Dienstag 23. Juni 2026, … (STL = Standard Template Library)` |
+| `cd_text` | Text of the link on the page (`coursedl-web:` only), e.g. `Lecture 1: Introduction` |
+| `cd_item` | Text of the link's list item or table row before its first link, e.g. `Lecture 9, Tuesday 23 June, … (Sorting)` |
 | `cd_kind` | `file` or `video` (YouTube) |
 | yt-dlp's fields | e.g. `title`, `ext`, `upload_date` for videos |
 
 `cd_text`/`cd_item` are unset when empty, so give a default: `%(cd_item|-)s`. To name files after the page, put the text in front of the path and take it apart in the rules:
 
 ```toml
-[sources.cpp.templates]
-file = "%(cd_item|-)s/%(cd_path)s"     # "Vorlesung 9, … (STL = …)/<heading>/vorlesung-09.mp4"
+[sources.lecture.templates]
+file = "%(cd_item|-)s/%(cd_path)s"     # "Lecture 9, … (Sorting)/<heading>/lecture-09.mp4"
 
-[sources.cpp]
+[sources.lecture]
 transform = '''
-Vorlesung\s(\d+),[^/]*\((.*)\)[^/]*/.*\.mp4 -re-> "Recordings/{i1:02} {g2}.mp4"
+Lecture\s(\d+),[^/]*\((.*)\)[^/]*/.*\.mp4 -re-> "Recordings/{i1:02} {g2}.mp4"
 '''
 ```
 
@@ -116,12 +116,12 @@ Common rules:
 # trailing number from the name: (.*?) is the name, [-_]? the separator, (\d+) the number.
 uebungen/(.*?)[-_]?(\d+)\.pdf -re-> "Exercises/{i2:02} {g1}.pdf"
 
-# Leading numbers like "3_Basic-of-HPO.pdf" or "w01_t01_04_big_picture.pdf":
+# Leading numbers like "3_introduction.pdf" or "w01_t01_04_overview.pdf":
 # (?:[a-z]?\d+[_-])* strips all of them.
 Week\s(\d+)/(?:[a-z]?\d+[_-])*(.*\.pdf) -re-> "Slides/{i1:02} {g2}"
 
-# A folder per unit for code: "code/vorlesung-03/Makefile" -> "Media/03/Makefile"
-code/vorlesung-(\d+)/(.*) -re-> "Media/{i1:02}/{g2}"
+# A folder per unit for code: "code/lecture-03/Makefile" -> "Media/03/Makefile"
+code/lecture-(\d+)/(.*) -re-> "Media/{i1:02}/{g2}"
 
 # Exclude
 .*\.tmp -re-> !

@@ -36,9 +36,9 @@ The remote key is the file's URL (path in the share for Nextcloud). The version 
 
 ### `on_change`: a changed file when your copy exists
 
-`keep-both` (default): your file stays; the new version is saved next to it with the remote modification date: `01 vorlesung (2026-05-03).pdf`. A second copy on the same day gets `-2`, `-3`, ….
+`keep-both` (default): your file stays; the new version is saved next to it with the remote modification date: `01 lecture (2026-05-03).pdf`. A second copy on the same day gets `-2`, `-3`, ….
 
-`backup-old`: your file is renamed to `01 vorlesung (local 2026-04-21).pdf` (its own modification date), the new version takes the original name.
+`backup-old`: your file is renamed to `01 lecture (local 2026-04-21).pdf` (its own modification date), the new version takes the original name.
 
 Either way you find both versions, and the notification lists the file as `updated`.
 

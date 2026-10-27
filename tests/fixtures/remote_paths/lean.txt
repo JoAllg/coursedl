@@ -1,3 +1,0 @@
-Lecture/lecture01.pdf
-Lecture/lecture01.lean
-Lecture/2026-10-20-lecture-1.mp4

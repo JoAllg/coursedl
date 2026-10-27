@@ -17,7 +17,7 @@ YouTube and Google Drive links found on a page are handled by `coursedl-web:` (Y
 ## `coursedl-web:` course page
 
 ```toml
-url = "coursedl-web:https://example.edu/teaching/cpp/"
+url = "coursedl-web:https://example.edu/teaching/lecture/"
 ```
 
 **Content area.** Only links in the page's content count; navigation, sidebars and footers are ignored. Without `content_selector`, the content area is the first of `<main>`, an element with `id="content"`, `<body>`. `<nav>` and `<footer>` are skipped inside it as well. That covers HTML5 pages, MoinMoin wikis, WordPress and old table layouts.
@@ -39,12 +39,12 @@ url = "coursedl-web:https://example.edu/teaching/cpp/"
 
 **Versions.** One HEAD request per file and run (`version = "head"`). A HEAD that fails (e.g. 401 for a protected file) makes the link unhandled instead of an error every run.
 
-Examples: the C++ wiki (MoinMoin, `#content`), the AutoML page (WordPress, password form, Drive and YouTube), the LMB page (table layout), the Lean page (HTML5).
+Works with e.g. MoinMoin wikis (`#content`), WordPress pages (password form, Drive and YouTube links), table layouts and plain HTML5 pages.
 
 ## `coursedl-dir:` directory listing
 
 ```toml
-url = "coursedl-dir:https://example.edu/cpp/files/"
+url = "coursedl-dir:https://example.edu/lecture/files/"
 ```
 
 No listing format is parsed: every link in the content area whose URL (without query) lies below the listing's URL counts; ending in `/` means subfolder. That works for Apache/nginx autoindex (the `?C=N;O=D` sort links point at the listing itself), mod_dav_svn and similar views. Links to parents or other sites are ignored. Versions by HEAD.
@@ -52,8 +52,8 @@ No listing format is parsed: every link in the content area whose URL (without q
 ## `coursedl-svn:` SVN working copy
 
 ```toml
-url        = "coursedl-svn:https://svn.example.edu/cpp/solutions/"
-output_dir = "Programmieren in C++/Solutions/SVN"
+url        = "coursedl-svn:https://svn.example.edu/lecture/solutions/"
+output_dir = "Lecture/Solutions/SVN"
 ```
 
 Not an extractor: coursedl runs the svn client (package `subversion`). The source's `output_dir` is an svn working copy: `svn checkout` on the first run, `svn update` on every run after that. What changed is reported like other downloads (new, updated, deleted, restored), and conflicts are reported (see [files.md](files.md#svn-sources)). Works with any SVN server over `https://`, `svn://` or `file://`. Transform rules don't apply: the repository's layout is kept.
@@ -61,7 +61,7 @@ Not an extractor: coursedl runs the svn client (package `subversion`). The sourc
 **Login.** svn's own credential cache is used, so there is no password in coursedl's config. Log in once by running svn yourself on the URL (with an access token, see [Course SVN with a web view](#course-svn-with-a-web-view)):
 
 ```sh
-svn ls --username <user> https://svn.example.edu/cpp/solutions/
+svn ls --username <user> https://svn.example.edu/lecture/solutions/
 ```
 
 svn asks for the password and keeps it (`~/.subversion`, or the desktop keyring). coursedl runs svn with `--non-interactive`; if the login is missing or no longer accepted, the source fails with "svn is not logged in for …: run `svn ls …` once", which is in the notification.

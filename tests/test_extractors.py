@@ -15,13 +15,13 @@ from coursedl.extractors.nextcloud import CoursedlNextcloudIE
 from coursedl.extractors.web import CoursedlWebIE
 
 FIXTURES = Path(__file__).parent / "fixtures"
-CPP = "https://ad-wiki.informatik.example.edu/teaching/ProgrammierenCplusplusSS2026"
-SVN_WEB = "https://svn.example.edu/ss2026/ProgrammierenCplusplus/svn/public/"
+WIKI = "https://wiki.example.edu/teaching/ExampleCourseSS2026"
+SVN_WEB = "https://svn.example.edu/ss2026/ExampleCourse/svn/public/"
 
 
 def page(name: str) -> str:
     raw = (FIXTURES / name).read_bytes()
-    return raw.decode("latin-1" if name == "lmb.html" else "utf-8")
+    return raw.decode("latin-1" if name == "table.html" else "utf-8")
 
 
 def make_ie[T: CoursedlIE](
@@ -40,57 +40,58 @@ def make_ie[T: CoursedlIE](
 
 
 def test_content_area_skips_navigation() -> None:
-    hrefs = [link.href for link in content_links(page("cpp.html"))]
+    hrefs = [link.href for link in content_links(page("wiki.html"))]
     # MoinMoin's sidebar and wiki actions are outside #content.
     assert not any("action=" in h or h.endswith("RecentChanges") for h in hrefs)
-    assert "https://youtu.be/rgs3qj-YPYM" in hrefs
-    # LMB: navigation tables are outside #content; headings become folders.
-    links = {link.href: link for link in content_links(page("lmb.html"))}
+    assert "https://youtu.be/example0001" in hrefs
+    # Table layout: navigation tables are outside #content; headings become folders.
+    links = {link.href: link for link in content_links(page("table.html"))}
     assert "/people/team.php" not in links
-    assert links["slides/ImageProcessing01.pdf"].folders == ("Materials",)
+    assert links["slides/Lecture01.pdf"].folders == ("Materials",)
     # A stray </tr> in the material table must not end the content area.
-    assert links["slides/ImageProcessing09.pdf"].folders == ("Materials",)
-    # Lean: HTML5 <main>, the <nav> above it is ignored.
-    links = {link.href: link for link in content_links(page("lean.html"))}
-    assert links["/teaching/26ws/lean/slides/lecture01.pdf"].folders == ("Lecture",)
+    assert links["slides/Lecture09.pdf"].folders == ("Materials",)
+    # HTML5 <main>, the <nav> above it is ignored.
+    links = {link.href: link for link in content_links(page("html5.html"))}
+    assert links["/teaching/fp/slides/lecture01.pdf"].folders == ("Lecture",)
+    assert "/teaching/fp/slides/old-lecture01.pdf" not in links
 
 
 def test_content_selector() -> None:
-    cpp = page("cpp.html")
-    assert content_links(cpp, "div#content") == content_links(cpp)
-    lmb = content_links(page("lmb.html"), "table")  # first <table> is the navigation
-    assert lmb[0].href == "/index.php"
+    wiki = page("wiki.html")
+    assert content_links(wiki, "div#content") == content_links(wiki)
+    table = content_links(page("table.html"), "table")  # first <table> is the navigation
+    assert table[0].href == "/index.php"
 
 
 def test_web_page() -> None:
     sources = {
-        CPP: page("cpp.html"),
+        WIKI: page("wiki.html"),
         # Only the code listing for lecture 1 is a fixture; the others stay unhandled.
-        SVN_WEB + "code/vorlesung-01/": page("svn_code_vl01.html"),
+        SVN_WEB + "code/lecture-01/": page("svn_code_01.html"),
     }
     ie, ctx = make_ie(
         CoursedlWebIE,
-        f"coursedl-web:{CPP}",
+        f"coursedl-web:{WIKI}",
         sources,
-        dir_regex=r"/svn/public/code/vorlesung-01/",
-        ignore_regex=r"/svn/loesungen/",
+        dir_regex=r"/svn/public/code/lecture-01/",
+        ignore_regex=r"/svn/solutions/",
     )
-    result = ie._real_extract(f"coursedl-web:{CPP}")  # pyright: ignore[reportPrivateUsage]
+    result = ie._real_extract(f"coursedl-web:{WIKI}")  # pyright: ignore[reportPrivateUsage]
     entries = result["entries"]
-    folder = "Vorlesungsfolien, Videoaufzeichnungen, Übungsblätter und Codedateien"
+    folder = "Slides, recordings, exercise sheets and code"
     by_path = {e.get("cd_path"): e for e in entries}
 
-    pdf = by_path[f"{folder}/vorlesung-01.pdf"]
-    assert pdf["id"].endswith("/svn/public/folien/vorlesung-01.pdf@v1")
-    assert by_path[f"{folder}/vorlesung-01/PrimeMain.cpp"]["cd_kind"] == "file"
+    pdf = by_path[f"{folder}/lecture-01.pdf"]
+    assert pdf["id"].endswith("/svn/public/slides/lecture-01.pdf@v1")
+    assert by_path[f"{folder}/lecture-01/main.cpp"]["cd_kind"] == "file"
 
     videos = [e for e in entries if e.get("cd_kind") == "video"]
-    assert len(videos) == 12
+    assert len(videos) == 3
     assert videos[0]["_type"] == "url_transparent"
     assert videos[0]["cd_dir"] == folder
     assert ctx.listed == len(entries)
     # Links in the content that no rule handles; wiki actions and anchors are not.
-    assert "https://ad.informatik.example.edu/staff/lehmann" in ctx.unhandled
+    assert "https://staff.example.edu/people/doe" in ctx.unhandled
     assert not any("action=" in u for u in ctx.unhandled)
 
 
@@ -98,28 +99,28 @@ def test_dir_listing() -> None:
     ie, _ = make_ie(CoursedlDirIE, f"coursedl-dir:{SVN_WEB}", {})
     pages = {
         SVN_WEB: page("svn_public.html"),
-        SVN_WEB + "code/": '<main><a href="vorlesung-01/?">vorlesung-01</a></main>',
-        SVN_WEB + "code/vorlesung-01/": page("svn_code_vl01.html"),
-        SVN_WEB + "folien/": page("svn_folien.html"),
-        SVN_WEB + "uebungen/": "<main></main>",
+        SVN_WEB + "code/": '<main><a href="lecture-01/?">lecture-01</a></main>',
+        SVN_WEB + "code/lecture-01/": page("svn_code_01.html"),
+        SVN_WEB + "slides/": page("svn_slides.html"),
+        SVN_WEB + "exercises/": "<main></main>",
     }
     ie.fetch = lambda url, note="": (pages[url], url)
     entries = ie._real_extract(f"coursedl-dir:{SVN_WEB}")["entries"]  # pyright: ignore[reportPrivateUsage]
     paths = {e["cd_path"] for e in entries}
-    assert "folien/vorlesung-01.pdf" in paths
-    assert "code/vorlesung-01/Makefile" in paths
+    assert "slides/lecture-01.pdf" in paths
+    assert "code/lecture-01/Makefile" in paths
     # "..", breadcrumbs and "?revision=" links are not below the listing.
     assert all(not p.startswith(("..", "/")) for p in paths)
     assert all("?" not in e["url"] for e in entries)
 
 
 def test_autoindex_listing() -> None:
-    url = "https://ad-teaching.cs.example.edu/ProgrammierenCplusplusSS2026/osm-extra/"
-    ie, _ = make_ie(CoursedlDirIE, f"coursedl-dir:{url}", {url: page("osm.html")})
+    url = "https://course.example.edu/ExampleCourse/data-extra/"
+    ie, _ = make_ie(CoursedlDirIE, f"coursedl-dir:{url}", {url: page("autoindex.html")})
     entries = ie._real_extract(f"coursedl-dir:{url}")["entries"]  # pyright: ignore[reportPrivateUsage]
     names = {e["cd_path"] for e in entries}
-    assert "osm-ch-all-nodes.tsv" in names
-    assert len(names) == 12  # sort links and "Parent Directory" are dropped
+    assert "data-ch.tsv" in names
+    assert len(names) == 4  # sort links and "Parent Directory" are dropped
 
 
 NC_XML = """<?xml version="1.0"?>
@@ -174,15 +175,16 @@ def test_nextcloud(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_password_form() -> None:
-    # WordPress "protected post" page (AutoML lecture, before login).
-    form = password_form(page("automl_login.html"))
+    # WordPress "protected post" page, before login. The search form above it has no
+    # password field.
+    form = password_form(page("wp_login.html"))
     assert form
-    assert form.action == "https://ml.informatik.example.edu/wp-login.php?action=postpass"
+    assert form.action == "https://lectures.example.edu/wp-login.php?action=postpass"
     assert form.method == "post"
     assert form.password_field == "post_password"
-    assert form.fields["redirect_to"] == "https://ml.informatik.example.edu/ss26-automl-lecture/"
+    assert form.fields["redirect_to"] == "https://lectures.example.edu/example-lecture-2026/"
     assert form.fields["Submit"] == "Enter"
-    assert password_form(page("cpp.html")) is None
+    assert password_form(page("wiki.html")) is None
 
 
 LIST_PAGE = """<main><h4>Overview</h4><ul>

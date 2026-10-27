@@ -18,7 +18,7 @@ Design in short (user docs with the details: `README.md`, `docs/`):
 - **ruff** for lint and format: `uv run ruff check --fix` and `uv run ruff format`.
 - **basedpyright** for type checking: `uv run basedpyright` (mode "recommended"). It uses typeshed's yt-dlp stubs, which are incomplete for the internals we use (e.g. `_InfoDict` has no room for our `cd_*` fields, `Request` is typed as urllib's): use `Any` there or a `# pyright: ignore[rule]` with a short reason. The Any/Unknown rules are off.
 - **pytest** with offline fixtures only: `uv run pytest`. Tests must not need the university servers.
-- All tool config lives in `pyproject.toml`. Code lives in `src/coursedl/`, the extractors in `src/coursedl/extractors/`. Saved pages of the example courses are in `tests/fixtures/`.
+- All tool config lives in `pyproject.toml`. Code lives in `src/coursedl/`, the extractors in `src/coursedl/extractors/`. Synthetic sample pages (no real courses) are in `tests/fixtures/`.
 - `src/coursedl/transform.py` is copied from PFERD: keep it close to upstream (checked less strictly).
 - Before finishing a change: `ruff check`, `ruff format --check`, `basedpyright` and `pytest` all pass.
 - Only use yt-dlp internals that are listed in `tests/test_api_surface.py`; add new ones there and update the snapshot with `UPDATE_SNAPSHOT=1 uv run pytest tests/test_api_surface.py` (the `yt-dlp-watch` workflow runs it for every new yt-dlp release).

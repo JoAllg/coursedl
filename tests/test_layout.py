@@ -1,6 +1,6 @@
-"""tests/fixtures/courses.toml against the real pages: saved page -> extractor -> template ->
+"""tests/fixtures/courses.toml against the sample pages: saved page -> extractor -> template ->
 transform rules, as in a run. Sources without a saved page use the remote paths of a
-real dry run (tests/fixtures/remote_paths/<source>.txt).
+dry run (tests/fixtures/remote_paths/<source>.txt).
 
 Every file must match a rule and land in the course layout (see courses.toml), and no
 two files may share a local path."""
@@ -20,11 +20,11 @@ from coursedl.movepp import local_path, unmatched
 FIXTURES = Path(__file__).parent / "fixtures"
 LAYOUT = ("Slides/", "Recordings/", "Exercises/", "Solutions/", "Media/", "Exam/", "Project/")
 CFG = config.load(FIXTURES / "courses.toml")
-OSM = "https://ad-teaching.cs.example.edu/ProgrammierenCplusplusSS2026/osm-extra/"
-PAGES = {  # source -> {url: saved page}
-    "cpp": {"": "cpp.html", OSM: "osm.html"},
-    "imageproc": {"": "lmb.html"},
-    "lean": {"": "lean.html"},
+DATA = "https://course.example.edu/ExampleCourse/data-extra/"
+PAGES = {  # source -> {url: sample page}
+    "lecture-wiki": {"": "wiki.html", DATA: "autoindex.html"},
+    "table": {"": "table.html"},
+    "html5": {"": "html5.html"},
 }
 
 
@@ -37,7 +37,7 @@ def page_entries(source: str) -> list[dict[str, Any]]:
     def fetch(url: str, note: str = "") -> tuple[str, str]:
         del note
         raw = pages[url]
-        return raw.decode("latin-1" if source == "imageproc" else "utf-8"), url
+        return raw.decode("latin-1" if source == "table" else "utf-8"), url
 
     ie.fetch = fetch
     ie.head = lambda url: Head("v1")
@@ -60,7 +60,7 @@ def mapping(source: str) -> dict[str, str]:
     return result
 
 
-@pytest.mark.parametrize("source", ["cpp", "cpp-public", "automl", "imageproc", "lean"])
+@pytest.mark.parametrize("source", ["lecture-wiki", "lecture-svn", "weekly", "table", "html5"])
 def test_layout(source: str) -> None:
     local = mapping(source)
     assert local
@@ -69,34 +69,34 @@ def test_layout(source: str) -> None:
 
 
 def test_names() -> None:
-    public = mapping("cpp-public")
-    assert public["folien/vorlesung-03.pdf"] == "Slides/03 vorlesung.pdf"
-    assert public["uebungen/blatt-03.pdf"] == "Exercises/03 blatt.pdf"
-    assert public["code/vorlesung-03/Makefile"] == "Media/03/Makefile"
-    assert public["code/projekt/template/TerminalManager.h"] == "Project/template/TerminalManager.h"
+    svn = mapping("lecture-svn")
+    assert svn["slides/lecture-03.pdf"] == "Slides/03 lecture.pdf"
+    assert svn["exercises/sheet-03.pdf"] == "Exercises/03 sheet.pdf"
+    assert svn["code/lecture-03/Makefile"] == "Media/03/Makefile"
+    assert svn["code/project/template/Game.h"] == "Project/template/Game.h"
 
-    cpp = set(mapping("cpp").values())
-    assert "Recordings/09 STL = Standard Template Library.mp4" in cpp
-    assert "Media/09/osm-de.tsv" in cpp  # linked in lecture 9's list item
-    assert "Media/09/osm-extra/osm-us.tsv" in cpp
+    wiki = set(mapping("lecture-wiki").values())
+    assert "Recordings/09 Sorting.mp4" in wiki
+    assert "Media/09/data-de.tsv" in wiki  # linked in lecture 9's list item
+    assert "Media/09/data-extra/data-us.tsv" in wiki
 
-    automl = mapping("automl")
-    assert automl["Introduction_Slides_2026.pdf"] == "Slides/00 Introduction.pdf"
-    assert automl["Week 0/w01_t01_04_big_picture.pdf"] == "Slides/00 big_picture.pdf"
-    assert automl["Week 0/Week_01_all_videos.mp4"] == "Recordings/00 MOOC week 01.mp4"
-    assert automl["Week 6/Exercise 5 - NAS.pdf"] == "Exercises/06 NAS.pdf"  # the page's week
-    assert automl["Week 1/3_Basic-of-HPO_ALL.pdf"] == "Slides/01 Basic-of-HPO_ALL.pdf"
+    weekly = mapping("weekly")
+    assert weekly["Introduction_Slides_2026.pdf"] == "Slides/00 Introduction.pdf"
+    assert weekly["Week 0/w01_t01_01_overview.pdf"] == "Slides/00 overview.pdf"
+    assert weekly["Week 0/Week_01_all_videos.mp4"] == "Recordings/00 merged week 01.mp4"
+    assert weekly["Week 6/Exercise 5 - Search.pdf"] == "Exercises/06 Search.pdf"  # the page's week
+    assert weekly["Week 1/3_Basics_ALL.pdf"] == "Slides/01 Basics_ALL.pdf"
 
-    lmb = set(mapping("imageproc").values())
-    assert "Slides/01 Introduction and image basics.pdf" in lmb
-    assert "Recordings/01 ImageProcessing.mp4" in lmb
-    assert "Recordings/03 Appendix.mp4" in lmb
-    assert "Exercises/02 Exercise.zip" in lmb
-    assert "Solutions/02 Solution.zip" in lmb
+    table = set(mapping("table").values())
+    assert "Slides/01 Introduction and basics.pdf" in table
+    assert "Recordings/01 Lecture.mp4" in table
+    assert "Recordings/03 Appendix.mp4" in table
+    assert "Exercises/02 Exercise.zip" in table
+    assert "Solutions/02 Solution.zip" in table
 
-    lean = set(mapping("lean").values())
-    assert lean == {
+    html5 = set(mapping("html5").values())
+    assert html5 == {
         "Slides/01 Introduction.pdf",
         "Recordings/01 Introduction.mp4",
-        "Media/01/lecture01.lean",
+        "Media/01/lecture01.py",
     }
