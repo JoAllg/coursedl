@@ -147,7 +147,9 @@ def _run_ytdlp(
             ctx.unmatched[str(remote)] = info.get("url") or ""
             return "no transform rule matches"
         if args.explain or args.dry_run:
-            print(f"{remote} -> {local or '! (excluded)'}")
+            # The entry ID ties a file to its old path when templates change (remap tools).
+            entry_id = f"  [{info['id']}]" if args.explain else ""
+            print(f"{remote} -> {local or '! (excluded)'}{entry_id}")
         # Transform rules that map two files to one name would make the second look like
         # a new version of the first (keep-both copy).
         if local and claimed.setdefault(local, info["id"]) != info["id"]:
@@ -274,7 +276,7 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("sync", help="download new and changed files")
     _ = s.add_argument("sources", nargs="*", help="default: all")
     _ = s.add_argument("--dry-run", action="store_true", help="list only, change nothing")
-    _ = s.add_argument("--explain", action="store_true", help="print remote -> local paths")
+    _ = s.add_argument("--explain", action="store_true", help="print remote -> local paths, IDs")
     _ = s.add_argument("--notify", action="store_true", help="run notify_cmd if there is news")
     _ = s.add_argument(
         "--restore-missing",

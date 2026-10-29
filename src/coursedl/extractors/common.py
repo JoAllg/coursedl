@@ -155,14 +155,17 @@ class CoursedlIE(InfoExtractor):
 
 
 def link_fields(link: Link | None) -> Entry:
-    """`cd_text` (link text) and `cd_item` (text of its list item or table row), for
+    """`cd_text` (link text), `cd_item` (text of its list item or table row) and `cd_row`
+    (row text up to and including the link), for
     templates that build names from the page. `None` when empty, so templates can give a
     default (`%(cd_text|-)s`); "/" can't start a folder."""
     text = link.text if link else ""
     item = link.item if link else ""
+    row = link.row if link else ""
     return {
         "cd_text": text.replace("/", "\u29f8") or None,
         "cd_item": item.replace("/", "\u29f8") or None,
+        "cd_row": row.replace("/", "\u29f8") or None,
     }
 
 

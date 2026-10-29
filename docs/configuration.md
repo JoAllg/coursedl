@@ -78,6 +78,7 @@ Fields for templates:
 | `cd_dir`, `cd_name` | Folder and file name part of `cd_path` |
 | `cd_text` | Text of the link on the page (`coursedl-web:` only), e.g. `Lecture 1: Introduction` |
 | `cd_item` | Text of the link's list item or table row before its first link, e.g. `Lecture 9, Tuesday 23 June, … (Sorting)` |
+| `cd_row` | Text of the link's list item or table row up to and including the link, with the texts of earlier links, e.g. `Week 2 (Sorting) Slides 02 , Recording`: names the unit of a link whose own text doesn't |
 | `cd_kind` | `file` or `video` (YouTube) |
 | yt-dlp's fields | e.g. `title`, `ext`, `upload_date` for videos |
 
@@ -133,7 +134,7 @@ code/lecture-(\d+)/(.*) -re-> "Media/{i1:02}/{g2}"
 
 Files no rule matches are held back and reported once (`unmatched = "warn"`), so a new kind of file never lands in a wrong place unnoticed. `--dry-run` shows them as `… -> ? (no rule matches, not downloaded)`.
 
-Check rules with `coursedl sync --dry-run SOURCE` (remote path → local path for each file) or `--explain` (also every rule tried). If two different files end up on the same local path, the run warns: the rules need to tell them apart.
+Check rules with `coursedl sync --dry-run SOURCE` (remote path → local path for each file) or `--explain` (also every rule tried and each file's entry ID). If two different files end up on the same local path, the run warns: the rules need to tell them apart.
 
 ## Command line
 
@@ -146,7 +147,7 @@ coursedl [-c CONFIG] links SOURCE
 |---|---|
 | `SOURCE…` | Only these sources (default: all) |
 | `--dry-run` | List and print remote → local paths; download nothing, change no state |
-| `--explain` | Print the paths and each transform step during a real run |
+| `--explain` | Print the paths, entry IDs and each transform step during a real run |
 | `--notify` | Run `notify_cmd` if there is something new (for timers) |
 | `--restore-missing` | Ignore the archive once; see [files.md](files.md) |
 | `links SOURCE` | Links that no rule handles, with the date they first appeared |

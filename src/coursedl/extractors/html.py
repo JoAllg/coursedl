@@ -34,6 +34,9 @@ class Link:
     # Text of the enclosing list item or table row before its first link, e.g. "Lecture 9,
     # Tuesday 23 June 2026 (Sorting)". Often names the unit.
     item: str = ""
+    # Text of the row up to and including this link, link texts too: "2 Class 2: Filters
+    # Recording". Names the unit of links like "Recording".
+    row: str = ""
 
 
 @dataclass
@@ -45,6 +48,7 @@ class _ListItem:
     # Text up to the first link: "Week 1 (<a>Sheet</a> | <a>PDF</a>):" gives "Week 1".
     text: list[str] = field(default_factory=list)
     text_done: bool = False
+    row: list[str] = field(default_factory=list)
     # Set when a nested list starts; None while there is none (yet).
     label: str | None = None
     # Links seen before the sublist started. They belong to this item (e.g. the exercise
@@ -107,8 +111,10 @@ class _Parser(HTMLParser):
                         self.links[i] = replace(link, folders=(*link.folders, item.label))
         if tag not in VOID:
             self.stack.append((tag, inside, skip))
-        if tag in ("td", "th") and self.items and not self.items[-1].text_done:
-            self.items[-1].text.append(" ")  # cells of a row: "Tu 2026-10-20 Introduction"
+        if tag in ("td", "th") and self.items:
+            self.items[-1].row.append(" ")
+            if not self.items[-1].text_done:
+                self.items[-1].text.append(" ")  # cells of a row: "Tu 2026-10-20 Introduction"
         if tag in ("li", "tr") and inside and not skip:
             self.items.append(_ListItem(tag, len(self.stack)))
 
@@ -117,7 +123,8 @@ class _Parser(HTMLParser):
         if tag == "a" and self._link:
             href, text = self._link
             item = _clean(self.items[-1].text).rstrip(" :(-|").strip() if self.items else ""
-            self.links.append(Link(href, _clean(text), self._current_headings(), item))
+            row = _clean(self.items[-1].row) if self.items else ""
+            self.links.append(Link(href, _clean(text), self._current_headings(), item, row))
             self._link = None
             if self.items and self.items[-1].label is None:
                 self.items[-1].early_links.append(len(self.links) - 1)
@@ -143,8 +150,10 @@ class _Parser(HTMLParser):
         for part in (self._heading, self._link):
             if part:
                 part[1].append(data)
-        if self.items and self.items[-1].label is None and not self.items[-1].text_done:
-            self.items[-1].text.append(data)
+        if self.items and self.items[-1].label is None:
+            self.items[-1].row.append(data)
+            if not self.items[-1].text_done:
+                self.items[-1].text.append(data)
 
     def _current_headings(self) -> tuple[str, ...]:
         labels = (item.label for item in self.items if item.label)

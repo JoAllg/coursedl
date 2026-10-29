@@ -50,6 +50,9 @@ def test_content_area_skips_navigation() -> None:
     assert links["slides/Lecture01.pdf"].folders == ("Materials",)
     # A stray </tr> in the material table must not end the content area.
     assert links["slides/Lecture09.pdf"].folders == ("Materials",)
+    # The row text up to a link names the unit of a link like "Recording".
+    assert links["recordings/Lecture02.mp4"].item == "2"
+    assert links["recordings/Lecture02.mp4"].row == "2 Class 2: Filters Recording"
     # HTML5 <main>, the <nav> above it is ignored.
     links = {link.href: link for link in content_links(page("html5.html"))}
     assert links["/teaching/fp/slides/lecture01.pdf"].folders == ("Lecture",)

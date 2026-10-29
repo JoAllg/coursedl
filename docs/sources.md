@@ -35,7 +35,7 @@ url = "coursedl-web:https://example.edu/teaching/lecture/"
 **Remote path** (`cd_path`) = folders + file name:
 - Folders (`folders = "headings"`): the h2–h6 headings above the link (h1 is the page title), then the labels of list items that contain a sublist. The label is the item's text before its first link: `<li>Week 1 (<a>Sheet</a>): <ul>…` gives `Week 1`, and the sheet link on that line belongs to `Week 1` too.
 - File name: from the server's Content-Disposition if it sends one (Drive), else the last part of the URL. Two different files with the same path get the link text added: `week.mp4`, `week (merged videos with subtitles).mp4`.
-- Also available to templates: the link text (`cd_text`) and the text of the link's list item or table row (`cd_item`), see [configuration.md](configuration.md#naming-templates-and-transform-rules).
+- Also available to templates: the link text (`cd_text`), the text of the link's list item or table row before its first link (`cd_item`), and that text up to and including the link (`cd_row`, also has the texts of earlier links in the row), see [configuration.md](configuration.md#naming-templates-and-transform-rules).
 
 **Versions.** One HEAD request per file and run (`version = "head"`). A HEAD that fails (e.g. 401 for a protected file) makes the link unhandled instead of an error every run.
 
