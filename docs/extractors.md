@@ -69,7 +69,7 @@ class CoursedlJsonIE(CoursedlIE):
 ### Helpers you can use
 
 - `self.fetch(url)`: GET a page with the source's auth; returns `(text, final URL)`. With `form` auth it logs in first when the page shows a password form.
-- `self.head(url)`: HEAD request; `Head.version` is the ETag, else Last-Modified, else Content-Length. Use it when the listing itself has no version. Returns `None` on failure (e.g. 401); report such a file with `self.ctx.unhandled[norm_url(url)] = page` instead of failing the whole source.
+- `self.head(url)`: HEAD request; `Head.version` is the ETag, else Last-Modified, else Content-Length (or what the source's `version` strategy says). Use it when the listing itself has no version. Returns `None` on failure (e.g. 401); report such a file with `self.ctx.unhandled[norm_url(url)] = page` instead of failing the whole source.
 - `content_links(html, selector)` (`html.py`): the links in a page's content area, with the headings and list labels above each one (`Link.folders`).
 - `crawl_listing(ie, url, folder)` (`dirlist.py`): all files below an HTTP directory listing.
 - `walk(ie, root, headers)` (`webdav.py`): all files below a WebDAV folder, with versions.

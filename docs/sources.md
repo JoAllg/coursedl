@@ -37,7 +37,7 @@ url = "coursedl-web:https://example.edu/teaching/lecture/"
 - File name: from the server's Content-Disposition if it sends one (Drive), else the last part of the URL. Two different files with the same path get the link text added: `week.mp4`, `week (merged videos with subtitles).mp4`.
 - Also available to templates: the link text (`cd_text`), the text of the link's list item or table row before its first link (`cd_item`), and that text up to and including the link (`cd_row`, also has the texts of earlier links in the row), see [configuration.md](configuration.md#naming-templates-and-transform-rules).
 
-**Versions.** One HEAD request per file and run (`version = "head"`). A HEAD that fails (e.g. 401 for a protected file) makes the link unhandled instead of an error every run.
+**Versions.** One HEAD request per file and run; what counts as the version is set by `version` (`head`, `size`, `hash`, `github`, `none`, see [configuration.md](configuration.md)). A HEAD that fails (e.g. 401 for a protected file) makes the link unhandled instead of an error every run.
 
 Works with e.g. MoinMoin wikis (`#content`), WordPress pages (password form, Drive and YouTube links), table layouts and plain HTML5 pages.
 

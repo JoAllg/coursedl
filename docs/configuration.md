@@ -50,7 +50,21 @@ Options of `coursedl-web:` sources (what each does: [sources.md](sources.md)):
 | `folders` | `headings` | `headings`: headings and list labels become folders of the remote path; `none` |
 | `content_selector` | auto | Content area: `tag`, `#id`, `.class`, or combined (`div#content`) |
 | `warn_unhandled` | `true` | Warn about new links no rule handles |
-| `version` | `head` | `head`: HEAD request per file to detect changes; `none`: each URL once (also for `coursedl-dir:`) |
+| `version` | `head` | How changes are detected (also for `coursedl-dir:`), see below |
+
+`version` strategies (one HEAD request per file and run, except `none`):
+
+| Value | Version of a file | Downloads again when | Misses |
+|---|---|---|---|
+| `head` | ETag, else Last-Modified, else size | the server's ETag or date changes | nothing, but a site that sets the date on every deploy (GitHub Pages) downloads all files again each time |
+| `size` | Content-Length | the size changes | changes that keep the size |
+| `hash` | as `head` | as `head`, but a download whose content (sha256) was downloaded before for that URL is dropped silently, wherever your copy is now (hashes in `<source>.hashes`) | nothing; costs the download |
+| `github` | git blob SHA of the file in the site's repository (`<owner>.github.io` sites only) | the content changes | nothing; files not in the repository (e.g. generated) and other hosts linked from the page use `head` |
+| `none` | – | never: each URL is downloaded once | all changes |
+
+`github` reads the file list of the repository behind the site through GitHub's API, one request per repository and run (GitHub allows 60 per hour without a token). A project site `<owner>.github.io/<repo>/…` is repository `<owner>/<repo>`, else the user site `<owner>/<owner>.github.io`; the default branch is used, published from its root or `docs/`. If no repository can be read (e.g. rate limit), the source fails for that run instead of falling back to the ETag.
+
+Changing `version` of a source that already ran changes the archive IDs (except `head` <-> `hash`): every file is downloaded once more. Identical files at their usual place are dropped, but files you edited get a dated copy and files you moved come back.
 
 ## Authentication
 

@@ -3,6 +3,7 @@
 import filecmp
 import functools
 import glob
+import hashlib
 import itertools
 import logging
 import os
@@ -101,6 +102,7 @@ class MovePP(PostProcessor):
         on_change: str,
         restoring: bool,
         files: list[tuple[Status, str]],
+        hashes: Path | None = None,
     ):
         super().__init__(ydl)
         self._ydl: YoutubeDL = ydl
@@ -109,6 +111,13 @@ class MovePP(PostProcessor):
         self._on_change: str = on_change
         self._restoring: bool = restoring
         self.files: list[tuple[Status, str]] = files
+        # `version = "hash"`: "<sha256> <remote key>" of every file version downloaded so
+        # far, so a new ETag with old content (a redeployed site) adds nothing, wherever
+        # the user's copy is now.
+        self._hashes: Path | None = hashes
+        self._seen: set[str] = (
+            set(hashes.read_text().splitlines()) if hashes and hashes.exists() else set()
+        )
 
     @override
     def run(self, information: Any) -> tuple[list[str], Any]:
@@ -118,6 +127,18 @@ class MovePP(PostProcessor):
         src = Path(information["filepath"])
         if ts := information.get("timestamp"):
             os.utime(src, (ts, ts))
+        if self._hashes and (key := information.get("cd_key")):
+            with src.open("rb") as f:
+                line = f"{hashlib.file_digest(f, 'sha256').hexdigest()} {key}"
+            # --restore-missing wants the file back even though it was seen.
+            if line in self._seen and not self._restoring:
+                src.unlink()
+                log.info("[coursedl] unchanged (hash seen before): %s", dest)
+                return [], information
+            if line not in self._seen:
+                self._seen.add(line)
+                with self._hashes.open("a") as f:
+                    _ = f.write(f"{line}\n")
         if placed := place(src, dest, self._on_change, self._restoring):
             status, path = placed
             self.files.append((status, str(path.relative_to(self._root))))

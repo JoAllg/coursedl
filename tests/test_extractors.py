@@ -237,3 +237,39 @@ def test_password_form_types() -> None:
     assert form
     assert (form.password_field, form.username_field) == ("p", "u")
     assert form.fields["go"] == "1"
+
+
+def test_github_versions(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    from yt_dlp.utils import ExtractorError
+
+    trees = {
+        "owner/owner.github.io": {"tree": [{"path": "docs/x/a.pdf", "type": "blob", "sha": "s1"}]},
+        "owner/proj": {"tree": [{"path": "b.pdf", "type": "blob", "sha": "s2"}]},
+    }
+    calls: list[str] = []
+
+    def get(url: str, note: str) -> tuple[str, str]:
+        del note
+        calls.append(url)
+        repo = url.removeprefix("https://api.github.com/repos/").split("/git/")[0]
+        if repo not in trees:
+            raise ExtractorError("HTTP Error 404")
+        return json.dumps(trees[repo]), url
+
+    site = "coursedl-web:https://owner.github.io/x/"
+    ie, _ = make_ie(CoursedlWebIE, site, {}, version="github")
+    monkeypatch.setattr(ie, "_get", get)
+    blob = ie._blob_sha  # pyright: ignore[reportPrivateUsage]
+    assert blob("https://owner.github.io/x/a.pdf") == "s1"  # user site, from docs/
+    assert blob("https://owner.github.io/proj/b.pdf") == "s2"  # project site
+    assert blob("https://owner.github.io/x/new.pdf") is None  # not in the repo
+    assert blob("https://other.example.org/a.pdf") is None
+    assert len(calls) == 3  # one tree per repo and run (x: 404, user site, proj)
+    trees.clear()
+    ie.ctx.github_trees.clear()
+    with pytest.raises(ExtractorError):  # no repo reachable: fail, don't fall back
+        _ = blob("https://owner.github.io/x/a.pdf")
+    with pytest.raises(ValueError, match=r"github\.io"):
+        _ = Source(url="coursedl-web:https://example.org/", output_dir=Path(), version="github")

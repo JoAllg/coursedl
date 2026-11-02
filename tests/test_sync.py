@@ -310,3 +310,40 @@ follow_regex = "gone"
     state = SourceState.load(tmp_path / "state/kurs.json")
     assert state.status == "ok"
     assert state.links and f"{base}gone.html" in state.links
+
+
+@pytest.mark.parametrize(
+    ("version", "after_redeploy"),
+    [("head", ["a.pdf"]), ("size", []), ("hash", [])],
+)
+def test_version_strategies(
+    site: tuple[Path, str], tmp_path: Path, version: str, after_redeploy: list[str]
+) -> None:
+    root, base = site
+    out = tmp_path / "out/Kurs/Folien"
+    config = tmp_path / "courses.toml"
+    _ = config.write_text(f"""
+[defaults]
+output_root = "{tmp_path / "out"}"
+state_dir = "{tmp_path / "state"}"
+
+[defaults.ytdlp]
+external_downloader = {{}}
+
+[sources.kurs]
+url = "coursedl-web:{base}index.html"
+output_dir = "Kurs"
+version = "{version}"
+""")
+    write_page(root, "a.pdf")
+    write_file(root, "a.pdf", "A", 1_700_000_000)
+    assert main(["-c", str(config), "sync"]) == 0
+    _ = (out / "a.pdf").rename(out / "renamed.pdf")
+    # A redeployed site: same content, new date. Only `head` downloads it again.
+    write_file(root, "a.pdf", "A", 1_800_000_000)
+    assert main(["-c", str(config), "sync"]) == 0
+    assert sorted(p.name for p in out.iterdir() if p.name != "renamed.pdf") == after_redeploy
+    # Real change (other size): every strategy gets it.
+    write_file(root, "a.pdf", "A2", 1_900_000_000)
+    assert main(["-c", str(config), "sync"]) == 0
+    assert "A2" in [p.read_text() for p in out.iterdir()]

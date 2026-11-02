@@ -11,11 +11,12 @@ In `state_dir` (default: `.coursedl/` in `output_root`, next to the lecture fold
 | `<source>.archive` | yt-dlp download archive: one line per downloaded file version, `<extractor> <remote key>@<version>` (YouTube: the video ID) |
 | `<source>.json` | Unhandled links already reported, last status (ok/failed/empty), number of listed files |
 | `history.jsonl` | One line per run: new/updated files with their local paths, warnings, errors |
+| `<source>.hashes` | `version = "hash"` only: `<sha256> <remote key>` of every downloaded file version |
 | `<source>.cookies` | Cookies of the source's site (e.g. a form login's session), kept between runs. Delete it to log in again |
 | `<source>.lock` | Lock: two runs never work on the same source at once (different sources may) |
 | `<source>.staging-*/` | Downloads in progress; removed after each run |
 
-The remote key is the file's URL (path in the share for Nextcloud). The version comes from the source (see [sources.md](sources.md)): ETag, Last-Modified or size from a HEAD request, the SVN revision, or the WebDAV ETag.
+The remote key is the file's URL (path in the share for Nextcloud). The version comes from the source (see [sources.md](sources.md)): ETag, Last-Modified or size from a HEAD request (or the git blob SHA, see [`version`](configuration.md)), the SVN revision, or the WebDAV ETag.
 
 ## What happens in each case
 

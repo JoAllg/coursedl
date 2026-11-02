@@ -105,6 +105,8 @@ class CookiesAuth(_Model):
 Auth = Annotated[BasicAuth | FormAuth | CookiesAuth, Field(discriminator="type")]
 
 
+GITHUB_PAGES = re.compile(r"^https://([\w-]+)\.github\.io(/[^?#]*)?")
+
 SELECTOR_RE = re.compile(r"(?P<tag>[a-z][a-z0-9]*)?(?:#(?P<id>[\w-]+))?(?:\.(?P<cls>[\w-]+))?")
 
 
@@ -136,8 +138,8 @@ class Source(_Model):
     folders: Literal["headings", "none"] = "headings"
     content_selector: str | None = None
     warn_unhandled: bool = True
-    # coursedl-web and coursedl-dir
-    version: Literal["head", "none"] = "head"
+    # coursedl-web and coursedl-dir: how a file's version is found (docs/configuration.md)
+    version: Literal["head", "size", "hash", "github", "none"] = "head"
 
     @field_validator("transform")
     @classmethod
@@ -146,6 +148,13 @@ class Source(_Model):
             _ = Transformer(v)
         except RuleParseError as e:
             raise ValueError(str(e)) from e
+        return v
+
+    @field_validator("version")
+    @classmethod
+    def _check_version(cls, v: str, info: ValidationInfo) -> str:
+        if v == "github" and not GITHUB_PAGES.match(info.data.get("url", "").partition(":")[2]):
+            raise ValueError('"github" only works for sites on https://<owner>.github.io')
         return v
 
     @field_validator("content_selector")

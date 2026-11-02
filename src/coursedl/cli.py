@@ -202,6 +202,7 @@ def _run_ytdlp(
                 cfg.defaults.on_change,
                 args.restore_missing,
                 rep.files,
+                cfg.defaults.state_dir / f"{ctx.name}.hashes" if src.version == "hash" else None,
             ),
             when="after_move",
         )

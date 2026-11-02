@@ -1,5 +1,6 @@
 """Base class and helpers shared by the coursedl extractors."""
 
+import json
 from dataclasses import dataclass, field
 from email.message import Message
 from email.utils import parsedate_to_datetime
@@ -11,7 +12,7 @@ from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.networking import Request
 from yt_dlp.utils import ExtractorError
 
-from coursedl.config import FormAuth, Source
+from coursedl.config import GITHUB_PAGES, FormAuth, Source
 from coursedl.extractors.html import Form, Link, password_form
 
 Entry = dict[str, Any]
@@ -33,6 +34,7 @@ class Context:
     unhandled: dict[str, str] = field(default_factory=dict)  # url -> page it was found on
     unmatched: dict[str, str] = field(default_factory=dict)  # remote path -> url (no rule)
     listed: int = 0
+    github_trees: dict[str, dict[str, str] | None] = field(default_factory=dict)  # by repo
 
 
 @dataclass(frozen=True)
@@ -99,12 +101,18 @@ class CoursedlIE(InfoExtractor):
     def head(self, url: str) -> Head | None:
         """HEAD request; the version is the ETag, else Last-Modified, else Content-Length.
         `None` if the request fails, e.g. 401 for a protected file."""
-        if self.ctx.source.version == "none":
+        strategy = self.ctx.source.version
+        if strategy == "none":
             return Head()
+        headers = self._headers_for(url)
+        if strategy == "size":
+            # The file's own size: a gzip response has the compressed size. Only here, as
+            # it also changes the ETag (`W/` prefix) and so the archive IDs of `head`.
+            headers = {**headers, "Accept-Encoding": "identity"}
         try:
             urlh = self._request_webpage(
                 # The stubs expect urllib's Request; yt-dlp takes its own.
-                Request(url, method="HEAD", headers=self._headers_for(url)),  # pyright: ignore[reportArgumentType]
+                Request(url, method="HEAD", headers=headers),  # pyright: ignore[reportArgumentType]
                 self.ctx.name,
                 f"Checking {url_name(url)}",
             )
@@ -115,9 +123,56 @@ class CoursedlIE(InfoExtractor):
         h = urlh.headers
         modified = h.get("Last-Modified")
         version = h.get("ETag") or modified or h.get("Content-Length")
+        if strategy == "size":
+            version = h.get("Content-Length")
+        elif strategy == "github":
+            version = self._blob_sha(url) or version
         disposition = Message()
         disposition["Content-Disposition"] = h.get("Content-Disposition") or ""
         return Head(version, http_date(modified), disposition.get_filename())
+
+    def _blob_sha(self, url: str) -> str | None:
+        """Git blob SHA of a GitHub Pages file: a hash of its content, unlike the ETag,
+        which has the deploy time in it. A project site `<owner>.github.io/<repo>/…` is
+        repo `<owner>/<repo>`, else the user site repo `<owner>/<owner>.github.io`; the
+        site is published from the repo's root or `docs/` (GitHub's two folder choices).
+        `None` for a file that is not in the repo (e.g. built by the site generator)."""
+        m = GITHUB_PAGES.match(url)
+        if not m:
+            return None
+        owner, path = m[1].lower(), unquote(m[2] or "").lstrip("/")
+        first, _, rest = path.partition("/")
+        candidates = [(f"{owner}/{owner}.github.io", path)]
+        if rest:  # a project site takes precedence: GitHub serves it at that path
+            candidates.insert(0, (f"{owner}/{first}", rest))
+        trees = [(t, p) for repo, p in candidates if (t := self._github_tree(repo)) is not None]
+        if not trees:
+            # Falling back to the ETag here would change the archive IDs on every outage.
+            raise ExtractorError(f"no GitHub repository found for {url}", expected=True)
+        for tree, p in trees:
+            for prefix in ("", "docs/"):
+                if sha := tree.get(prefix + p):
+                    return sha
+        self.report_warning(f"{url} is not in the GitHub repository, using its ETag")
+        return None
+
+    def _github_tree(self, repo: str) -> dict[str, str] | None:
+        """path -> blob SHA of all files in the repo's default branch: one API request per
+        repo and run (60 per hour without a token). `None` if the repo does not exist."""
+        trees = self.ctx.github_trees
+        if repo not in trees:
+            api = f"https://api.github.com/repos/{repo}/git/trees/HEAD?recursive=1"
+            try:
+                text, _ = self._get(api, f"Downloading file list of {repo}")
+                data = json.loads(text)
+            except ExtractorError:
+                trees[repo] = None
+            else:
+                if data.get("truncated"):
+                    self.report_warning(f"GitHub lists only part of {repo}")
+                tree = data.get("tree", [])
+                trees[repo] = {e["path"]: e["sha"] for e in tree if e["type"] == "blob"}
+        return trees[repo]
 
     def file_entry(
         self,
@@ -143,6 +198,7 @@ class CoursedlIE(InfoExtractor):
             "cd_name": path.name,
             "cd_dir": str(path.parent),
             "cd_kind": "file",
+            "cd_key": key,
             "cd_version": version,
             "timestamp": timestamp,
             "http_headers": self._headers_for(url),
