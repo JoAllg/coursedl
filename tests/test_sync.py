@@ -312,6 +312,33 @@ follow_regex = "gone"
     assert state.links and f"{base}gone.html" in state.links
 
 
+@pytest.mark.parametrize("warn_missing", [True, False])
+def test_missing_file(site: tuple[Path, str], tmp_path: Path, warn_missing: bool) -> None:
+    # A file link that answers 404 (recording not uploaded yet)
+    root, base = site
+    write_page(root, "later.pdf", "a.pdf")
+    write_file(root, "a.pdf", "A", 1_700_000_000)
+    config = tmp_path / "courses.toml"
+    _ = config.write_text(f"""
+[defaults]
+output_root = "{tmp_path / "out"}"
+state_dir = "{tmp_path / "state"}"
+
+[sources.kurs]
+url = "coursedl-web:{base}index.html"
+output_dir = "Kurs"
+warn_missing = {str(warn_missing).lower()}
+""")
+    for _ in range(2):  # the second run is past the first-run baseline
+        assert main(["-c", str(config), "sync"]) == 0
+    state = SourceState.load(tmp_path / "state/kurs.json")
+    assert state.links is not None
+    assert (f"{base}later.pdf" in state.links) == warn_missing
+    write_file(root, "later.pdf", "L", 1_700_000_000)
+    assert main(["-c", str(config), "sync"]) == 0
+    assert (tmp_path / "out/Kurs/Folien/later.pdf").exists()
+
+
 @pytest.mark.parametrize(
     ("version", "after_redeploy"),
     [("head", ["a.pdf"]), ("size", []), ("hash", [])],

@@ -50,6 +50,7 @@ Options of `coursedl-web:` sources (what each does: [sources.md](sources.md)):
 | `folders` | `headings` | `headings`: headings and list labels become folders of the remote path; `none` |
 | `content_selector` | auto | Content area: `tag`, `#id`, `.class`, or combined (`div#content`) |
 | `warn_unhandled` | `true` | Warn about new links no rule handles |
+| `warn_missing` | `true` | `false`: file links that answer 404 (e.g. a recording not uploaded yet) are skipped without a warning and tried again each run (also for `coursedl-dir:`) |
 | `version` | `head` | How changes are detected (also for `coursedl-dir:`), see below |
 
 `version` strategies (one HEAD request per file and run, except `none`):

@@ -25,6 +25,7 @@ from yt_dlp.downloader import get_suitable_downloader
 from yt_dlp.downloader.external import Aria2cFD
 from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.networking import Request
+from yt_dlp.networking.exceptions import HTTPError
 from yt_dlp.postprocessor.common import PostProcessor
 from yt_dlp.utils import ExtractorError, sanitize_filename
 
@@ -45,6 +46,7 @@ SYMBOLS: dict[str, Any] = {
     "InfoExtractor.playlist_result": InfoExtractor.playlist_result,
     "InfoExtractor.url_result": InfoExtractor.url_result,
     "InfoExtractor.report_warning": InfoExtractor.report_warning,
+    "InfoExtractor.write_debug": InfoExtractor.write_debug,
     "InfoExtractor.suitable": InfoExtractor.suitable,
     "InfoExtractor.ie_key": InfoExtractor.ie_key,
     "YoutubeDL.urlopen": YoutubeDL.urlopen,
@@ -53,6 +55,7 @@ SYMBOLS: dict[str, Any] = {
     "Request.__init__": Request.__init__,
     "sanitize_filename": sanitize_filename,
     "ExtractorError.__init__": ExtractorError.__init__,
+    "HTTPError.__init__": HTTPError.__init__,  # ExtractorError.cause of a failed request
     "get_suitable_downloader": get_suitable_downloader,
 }
 

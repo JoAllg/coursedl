@@ -100,8 +100,9 @@ def sync_source(cfg: Config, name: str, args: argparse.Namespace) -> SourceRepor
         except Exception as e:  # e.g. password_cmd failed; the other sources still run
             log.exception("%s: %s", name, e)
             rep.errors.append(str(e))
+        unhandled = {u: p for u, p in ctx.unhandled.items() if u not in ctx.missing}
         new_state = update_state(
-            state, rep, ctx.unhandled, ctx.unmatched, listed, conflicts, inaccessible
+            state, rep, unhandled, ctx.unmatched, listed, conflicts, inaccessible
         )
         if not args.dry_run:
             new_state.save(state_path)

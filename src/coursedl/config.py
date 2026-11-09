@@ -138,6 +138,7 @@ class Source(_Model):
     folders: Literal["headings", "none"] = "headings"
     content_selector: str | None = None
     warn_unhandled: bool = True
+    warn_missing: bool = True
     # coursedl-web and coursedl-dir: how a file's version is found (docs/configuration.md)
     version: Literal["head", "size", "hash", "github", "none"] = "head"
 

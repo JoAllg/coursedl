@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlencode, urljoin, urlsplit, urlunsplit
 
 from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.networking import Request
+from yt_dlp.networking.exceptions import HTTPError
 from yt_dlp.utils import ExtractorError
 
 from coursedl.config import GITHUB_PAGES, FormAuth, Source
@@ -33,6 +34,7 @@ class Context:
     # Filled by the extractors, read by the wrapper after the run.
     unhandled: dict[str, str] = field(default_factory=dict)  # url -> page it was found on
     unmatched: dict[str, str] = field(default_factory=dict)  # remote path -> url (no rule)
+    missing: set[str] = field(default_factory=set)  # normalised URLs: 404, not warned about
     listed: int = 0
     github_trees: dict[str, dict[str, str] | None] = field(default_factory=dict)  # by repo
 
@@ -118,6 +120,11 @@ class CoursedlIE(InfoExtractor):
             )
             assert urlh  # fatal=True
         except ExtractorError as e:
+            not_found = isinstance(e.cause, HTTPError) and e.cause.status == 404
+            if not_found and not self.ctx.source.warn_missing:
+                self.write_debug(f"{url} not there (yet): 404")
+                self.ctx.missing.add(norm_url(url))
+                return None
             self.report_warning(f"HEAD {url} failed: {e.orig_msg}")
             return None
         h = urlh.headers
